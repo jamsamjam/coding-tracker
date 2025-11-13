@@ -14,7 +14,7 @@ interface Problem {
   status: string;
 }
 
-const dbPath = path.join(process.cwd(), "coding-problems.json");
+const dbPath = path.join(process.cwd(), "db.json");
 const db = new Database(dbPath);
 
 export async function GET() {

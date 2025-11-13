@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Database from "easy-json-database";
 import path from "path";
 
-const dbPath = path.join(process.cwd(), "coding-problems.json");
+const dbPath = path.join(process.cwd(), "db.json");
 const db = new Database(dbPath);
 
 if (!db.has("memo")) {

@@ -44,5 +44,5 @@ yarn-error.log*
 next-env.d.ts
 
 # Database files
-coding-problems.json
+db.json
 backups/
