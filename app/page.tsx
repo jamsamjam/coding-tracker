@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { ContributionGraph } from "@/components/contribution-graph";
 import { AddProblemDialog } from "@/components/add-problem-dialog";
+import { EditProblemDialog } from "@/components/edit-problem-dialog";
 import { LoginDialog } from "@/components/login-dialog";
 import { NotesRenderer } from "@/components/notes-renderer";
 import { ExternalLink, Clock, Calendar, Trash2, LogOut, Pencil, Check, X } from "lucide-react";
@@ -24,6 +25,8 @@ interface Problem {
 export default function Home() {
   const [problems, setProblems] = useState<Problem[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingProblem, setEditingProblem] = useState<Problem | null>(null);
   const [filterStatus, setFilterStatus] = useState("All");
   const [filterDifficulty, setFilterDifficulty] = useState("All");
   const [isLoading, setIsLoading] = useState(true);
@@ -118,6 +121,27 @@ export default function Home() {
       }
     } catch (error) {
       console.error("Failed to add problem:", error);
+    }
+  };
+
+  const handleEditProblem = (problem: Problem) => {
+    setEditingProblem(problem);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateProblem = async (updatedProblem: Problem) => {
+    try {
+      const response = await fetch("/api/problems", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedProblem),
+      });
+      const result = await response.json();
+      if (result.success) {
+        setProblems(problems.map((p) => (p.id === updatedProblem.id ? result.data : p)));
+      }
+    } catch (error) {
+      console.error("Failed to update problem:", error);
     }
   };
 
@@ -387,14 +411,24 @@ export default function Home() {
                 {/* Header */}
                 <div className="flex items-start justify-between gap-2">
                   <h2 className="text-xl font-bold flex-1">{p.title}</h2>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDeleteProblem(p.id)}
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleEditProblem(p)}
+                      className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDeleteProblem(p.id)}
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Link */}
@@ -482,6 +516,17 @@ export default function Home() {
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
         onAdd={handleAddProblem}
+      />
+
+      {/* Edit Problem Dialog */}
+      <EditProblemDialog
+        isOpen={isEditDialogOpen}
+        onClose={() => {
+          setIsEditDialogOpen(false);
+          setEditingProblem(null);
+        }}
+        onUpdate={handleUpdateProblem}
+        problem={editingProblem}
       />
     </div>
   );

@@ -53,6 +53,32 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const problems = (db.get("problems") || []) as Problem[];
+    
+    const index = problems.findIndex((p) => p.id === body.id);
+    if (index === -1) {
+      return NextResponse.json(
+        { success: false, error: "Problem not found" },
+        { status: 404 }
+      );
+    }
+    
+    problems[index] = { ...problems[index], ...body };
+    db.set("problems", problems);
+    
+    return NextResponse.json({ success: true, data: problems[index] });
+  } catch (error) {
+    console.error("Error updating problem:", error);
+    return NextResponse.json(
+      { success: false, error: "Failed to update problem" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
