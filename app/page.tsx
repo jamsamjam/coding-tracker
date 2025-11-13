@@ -271,16 +271,16 @@ export default function Home() {
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               Coding Test Tracker
             </h1>
-            <div className="mt-1 flex items-center gap-2">
+            <div className="mt-1 flex items-start gap-2">
               {isEditingMemo ? (
-                <div className="flex items-center gap-2 flex-1">
-                  <input
-                    type="text"
+                <div className="flex items-start gap-2 flex-1">
+                  <textarea
                     value={tempMemo}
                     onChange={(e) => setTempMemo(e.target.value)}
-                    className="flex-1 px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                     placeholder="Enter your memo..."
                     autoFocus
+                    rows={3}
                   />
                   <Button
                     size="icon"
@@ -301,7 +301,9 @@ export default function Home() {
                 </div>
               ) : (
                 <>
-                  <p className="text-gray-600">{memo}</p>
+                  <div className="text-gray-600 text-sm flex-1">
+                    <NotesRenderer content={memo} />
+                  </div>
                   <Button
                     size="icon"
                     variant="ghost"

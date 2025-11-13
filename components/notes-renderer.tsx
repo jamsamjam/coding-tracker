@@ -1,103 +1,87 @@
 "use client";
 
-import React from "react";
+import ReactMarkdown from "react-markdown";
 
 interface NotesRendererProps {
   content: string;
 }
 
 export function NotesRenderer({ content }: NotesRendererProps) {
-  const renderContent = () => {
-    const lines = content.split("\n");
-    const elements: React.ReactElement[] = [];
-    let i = 0;
-
-    while (i < lines.length) {
-      const line = lines[i];
-
-      // Check for code block (```)
-      if (line.trim().startsWith("```")) {
-        const language = line.trim().slice(3).trim() || "plaintext";
-        const codeLines: string[] = [];
-        i++;
-
-        // Collect code block lines
-        while (i < lines.length && !lines[i].trim().startsWith("```")) {
-          codeLines.push(lines[i]);
-          i++;
-        }
-
-        // Add code block element
-        elements.push(
-          <pre
-            key={`code-${elements.length}`}
-            className="bg-gray-900 text-gray-100 rounded-md p-3 overflow-x-auto my-2"
-          >
-            <code className="text-sm font-mono">{codeLines.join("\n")}</code>
-          </pre>
-        );
-        i++; // Skip closing ```
-        continue;
-      }
-
-      // Process inline code and text
-      const processedLine = processInlineCode(line);
-      elements.push(
-        <div key={`line-${elements.length}`} className="leading-relaxed">
-          {processedLine}
-        </div>
-      );
-      i++;
-    }
-
-    return elements;
-  };
-
-  const processInlineCode = (text: string) => {
-    const parts: (string | React.ReactElement)[] = [];
-    let currentIndex = 0;
-    let inCode = false;
-    let codeStart = -1;
-
-    for (let i = 0; i < text.length; i++) {
-      if (text[i] === "`") {
-        if (!inCode) {
-          // Start of code
-          if (currentIndex < i) {
-            parts.push(text.slice(currentIndex, i));
-          }
-          codeStart = i + 1;
-          inCode = true;
-        } else {
-          // End of code
-          const codeContent = text.slice(codeStart, i);
-          parts.push(
-            <code
-              key={`inline-${parts.length}`}
-              className="bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded text-sm font-mono"
-            >
-              {codeContent}
-            </code>
-          );
-          currentIndex = i + 1;
-          inCode = false;
-        }
-      }
-    }
-
-    // Add remaining text
-    if (currentIndex < text.length) {
-      parts.push(text.slice(currentIndex));
-    }
-
-    return parts.length > 0 ? parts : text;
-  };
-
   if (!content) return null;
 
   return (
-    <div className="text-sm text-gray-700 whitespace-pre-wrap">
-      {renderContent()}
+    <div className="text-sm text-gray-700 prose prose-sm max-w-none">
+      <ReactMarkdown
+        components={{
+          // Links
+          a: ({ node, ...props }) => (
+            <a
+              {...props}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:text-blue-800 underline"
+            />
+          ),
+          // Inline code
+          code: ({ node, className, children, ...props }) => {
+            const isInline = !className;
+            if (isInline) {
+              return (
+                <code
+                  className="bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded text-sm font-mono"
+                  {...props}
+                >
+                  {children}
+                </code>
+              );
+            }
+            // Code block
+            return (
+              <code
+                className={`${className} block bg-gray-900 text-gray-100 rounded-md p-3 overflow-x-auto my-2 text-sm font-mono`}
+                {...props}
+              >
+                {children}
+              </code>
+            );
+          },
+          // Pre (code block wrapper)
+          pre: ({ node, ...props }) => (
+            <pre className="bg-gray-900 rounded-md my-2" {...props} />
+          ),
+          // Headings
+          h1: ({ node, ...props }) => (
+            <h1 className="text-xl font-bold mt-4 mb-2" {...props} />
+          ),
+          h2: ({ node, ...props }) => (
+            <h2 className="text-lg font-bold mt-3 mb-2" {...props} />
+          ),
+          h3: ({ node, ...props }) => (
+            <h3 className="text-base font-bold mt-2 mb-1" {...props} />
+          ),
+          // Lists
+          ul: ({ node, ...props }) => (
+            <ul className="list-disc list-inside my-2 space-y-1" {...props} />
+          ),
+          ol: ({ node, ...props }) => (
+            <ol className="list-decimal list-inside my-2 space-y-1" {...props} />
+          ),
+          // Paragraphs
+          p: ({ node, ...props }) => (
+            <p className="my-1 leading-relaxed" {...props} />
+          ),
+          // Bold
+          strong: ({ node, ...props }) => (
+            <strong className="font-bold" {...props} />
+          ),
+          // Italic
+          em: ({ node, ...props }) => (
+            <em className="italic" {...props} />
+          ),
+        }}
+      >
+        {content}
+      </ReactMarkdown>
     </div>
   );
 }
