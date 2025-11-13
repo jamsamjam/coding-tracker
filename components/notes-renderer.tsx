@@ -14,14 +14,23 @@ export function NotesRenderer({ content }: NotesRendererProps) {
       <ReactMarkdown
         components={{
           // Links
-          a: ({ node, ...props }) => (
-            <a
-              {...props}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-800 underline"
-            />
-          ),
+          a: ({ node, ...props }) => {
+            const href = props.href || "";
+            // Ensure the link has a protocol
+            const fullHref = href.match(/^https?:\/\//) 
+              ? href 
+              : `https://${href}`;
+            
+            return (
+              <a
+                {...props}
+                href={fullHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 underline"
+              />
+            );
+          },
           // Inline code
           code: ({ node, className, children, ...props }) => {
             const isInline = !className;
