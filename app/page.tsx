@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { ContributionGraph } from "@/components/contribution-graph";
 import { AddProblemDialog } from "@/components/add-problem-dialog";
-import { ExternalLink, Clock, Calendar, Trash2 } from "lucide-react";
+import { LoginDialog } from "@/components/login-dialog";
+import { ExternalLink, Clock, Calendar, Trash2, LogOut, Pencil, Check, X } from "lucide-react";
 
 interface Problem {
   id: number;
@@ -25,11 +26,26 @@ export default function Home() {
   const [filterStatus, setFilterStatus] = useState("All");
   const [filterDifficulty, setFilterDifficulty] = useState("All");
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [memo, setMemo] = useState("Track your progress and level up your coding skills");
+  const [isEditingMemo, setIsEditingMemo] = useState(false);
+  const [tempMemo, setTempMemo] = useState("");
 
-  // 데이터 불러오기
   useEffect(() => {
-    fetchProblems();
+    const authStatus = localStorage.getItem("isAuthenticated");
+    if (authStatus === "true") {
+      setIsAuthenticated(true);
+    }
+    setIsCheckingAuth(false);
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchProblems();
+      fetchMemo();
+    }
+  }, [isAuthenticated]);
 
   const fetchProblems = async () => {
     try {
@@ -43,6 +59,49 @@ export default function Home() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const fetchMemo = async () => {
+    try {
+      const response = await fetch("/api/memo");
+      const result = await response.json();
+      if (result.success) {
+        setMemo(result.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch memo:", error);
+    }
+  };
+
+  const saveMemo = async (newMemo: string) => {
+    try {
+      const response = await fetch("/api/memo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ memo: newMemo }),
+      });
+      const result = await response.json();
+      if (result.success) {
+        setMemo(result.data);
+      }
+    } catch (error) {
+      console.error("Failed to save memo:", error);
+    }
+  };
+
+  const handleEditMemo = () => {
+    setTempMemo(memo);
+    setIsEditingMemo(true);
+  };
+
+  const handleSaveMemo = () => {
+    saveMemo(tempMemo);
+    setIsEditingMemo(false);
+  };
+
+  const handleCancelMemo = () => {
+    setTempMemo("");
+    setIsEditingMemo(false);
   };
 
   const handleAddProblem = async (newProblem: Omit<Problem, "id">) => {
@@ -73,6 +132,37 @@ export default function Home() {
     } catch (error) {
       console.error("Failed to delete problem:", error);
     }
+  };
+
+  const handleLogin = async (
+    password: string
+  ): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const response = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        localStorage.setItem("isAuthenticated", "true");
+        setIsAuthenticated(true);
+        return { success: true };
+      } else {
+        return { success: false, message: result.message };
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      return { success: false, message: "Login failed. Please try again." };
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("isAuthenticated");
+    setIsAuthenticated(false);
+    setProblems([]);
   };
 
   const getDifficultyColor = (difficulty: string) => {
@@ -118,6 +208,24 @@ export default function Home() {
     hard: problems.filter((p) => p.difficulty === "Hard").length,
   };
 
+  // 인증 체크 중
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 로그인되지 않은 경우
+  if (!isAuthenticated) {
+    return <LoginDialog onLogin={handleLogin} />;
+  }
+
+  // 데이터 로딩 중
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
@@ -134,21 +242,71 @@ export default function Home() {
       <div className="max-w-7xl mx-auto flex flex-col gap-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
+          <div className="flex-1">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               Coding Test Tracker
             </h1>
-            <p className="text-gray-600 mt-1">
-              Track your progress and level up your coding skills
-            </p>
+            <div className="mt-1 flex items-center gap-2">
+              {isEditingMemo ? (
+                <div className="flex items-center gap-2 flex-1">
+                  <input
+                    type="text"
+                    value={tempMemo}
+                    onChange={(e) => setTempMemo(e.target.value)}
+                    className="flex-1 px-3 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter your memo..."
+                    autoFocus
+                  />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={handleSaveMemo}
+                    className="h-7 w-7 text-green-600 hover:text-green-700 hover:bg-green-50"
+                  >
+                    <Check className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={handleCancelMemo}
+                    className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <p className="text-gray-600">{memo}</p>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={handleEditMemo}
+                    className="h-7 w-7 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
-          <Button
-            onClick={() => setIsDialogOpen(true)}
-            size="lg"
-            className="shadow-lg hover:shadow-xl transition-shadow"
-          >
-            + Add Problem
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setIsDialogOpen(true)}
+              size="lg"
+              className="shadow-lg hover:shadow-xl transition-shadow"
+            >
+              + Add Problem
+            </Button>
+            <Button
+              onClick={handleLogout}
+              size="lg"
+              variant="outline"
+              className="shadow-lg hover:shadow-xl transition-shadow"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
+          </div>
         </div>
 
         {/* Stats Cards */}
