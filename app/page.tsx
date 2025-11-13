@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { ContributionGraph } from "@/components/contribution-graph";
 import { AddProblemDialog } from "@/components/add-problem-dialog";
 import { LoginDialog } from "@/components/login-dialog";
+import { NotesRenderer } from "@/components/notes-renderer";
 import { ExternalLink, Clock, Calendar, Trash2, LogOut, Pencil, Check, X } from "lucide-react";
 
 interface Problem {
@@ -457,9 +458,7 @@ export default function Home() {
                 {/* Notes */}
                 {p.learned && (
                   <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                    <p className="text-sm text-gray-700 leading-relaxed">
-                      {p.learned}
-                    </p>
+                    <NotesRenderer content={p.learned} />
                   </div>
                 )}
               </CardContent>
